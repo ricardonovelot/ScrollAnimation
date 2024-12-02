@@ -41,26 +41,53 @@ struct ContentView: View {
                     }
                 }
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 100)
-                        .onChanged { _ in
-                            fieldIsFocused = false
+                    DragGesture(minimumDistance: 10) // Lower minimumDistance for quicker response
+                        .onChanged { value in
+                            let verticalTranslation = value.translation.height
+                            if verticalTranslation > 0 {
+                                // Detecting downward swipe
+                                //print("Swiping Down")
+                                fieldIsFocused = false // Add your logic for swiping down here
+                            } else if verticalTranslation < 0 {
+                                // Detecting upward swipe
+                                //print("Swiping Up")
+                                // swipe is calculated here now 
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    if isBeyondZero {fieldIsFocused = true
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            if let lastId = items.last?.id {
+                                                withAnimation(.snappy){
+                                                    proxy.scrollTo(lastId, anchor: .bottom)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                // Add your logic for swiping up here
+                            }
+                        }
+                        .onEnded { _ in
+                            // Optionally handle the end of the gesture if needed
                         }
                 )
                 .scrollPosition($position)
                 .onScrollGeometryChange(for: Bool.self) { geometry in
-                    return geometry.contentSize.height < geometry.visibleRect.maxY - geometry.contentInsets.bottom - 55
-                } action: { _, _ in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        print(isBeyondZero)
-                        fieldIsFocused = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            if let lastId = items.last?.id {
-                                withAnimation(.snappy){
-                                    proxy.scrollTo(lastId, anchor: .bottom)
-                                }
-                            }
-                        }
-                    }
+                    return geometry.contentSize.height < geometry.visibleRect.maxY - geometry.contentInsets.bottom - 45
+                } action: { wasBeyondZero, isBeyondZero in
+                    self.isBeyondZero = isBeyondZero
+                    print(isBeyondZero)
+                    //swipe was calculated here before
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+//                        print(isBeyondZero)
+//                        fieldIsFocused = true
+//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+//                            if let lastId = items.last?.id {
+//                                withAnimation(.snappy){
+//                                    proxy.scrollTo(lastId, anchor: .bottom)
+//                                }
+//                            }
+//                        }
+//                    }
                 }
                 
                 .navigationTitle(text.isEmpty ? "Test" : text)
@@ -68,7 +95,8 @@ struct ContentView: View {
             
             .safeAreaInset(edge: .bottom) {
                 VStack{
-                    TextField("", text: $text, axis: .vertical)
+                    TextField("", text: $text)
+                        .focused($fieldIsFocused)
                         .padding(.horizontal,16)
                         .padding(.vertical,8)
                         .background(Color(uiColor: .secondarySystemGroupedBackground))
@@ -83,18 +111,27 @@ struct ContentView: View {
 //                            }
 //                        }
                         .submitLabel(.send)
-                        .onChange(of: text) { newValue in
-                            guard let newValueLastChar = newValue.last else { return }
-                            if newValueLastChar == "\n" {
-                                let newItem = StringItem(value: text)
-                                items.append(newItem)
-                                text = ""
-                                withAnimation(.snappy){
-                                    position.scrollTo(id: items.last?.id, anchor: .bottom)
-                                }
+                        .onSubmit {
+                            fieldIsFocused = true
+                            let newItem = StringItem(value: text)
+                            items.append(newItem)
+                            text = ""
+                            withAnimation(.snappy){
+                                //position.scrollTo(id: items.last?.id, anchor: .bottom)
                             }
                         }
-                        .focused($fieldIsFocused)
+//                        .onChange(of: text) { newValue in
+//                            guard let newValueLastChar = newValue.last else { return }
+//                            if newValueLastChar == "\n" {
+//                                let newItem = StringItem(value: text)
+//                                items.append(newItem)
+//                                text = ""
+//                                withAnimation(.snappy){
+//                                    position.scrollTo(id: items.last?.id, anchor: .bottom)
+//                                }
+//                            }
+//                        }
+                        
                     
                 }
             }
