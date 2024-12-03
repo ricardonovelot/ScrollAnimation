@@ -24,6 +24,8 @@ struct ContentView: View {
         _items = State(initialValue: Array(1...50).map { _ in StringItem(value: ContentView.randomString()) })
     }
     
+    // working implementing this: https://www.reddit.com/r/SwiftUI/comments/xxvvo3/how_to_prevent_the_keyboard_hiding_after_i_click/
+    
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -35,7 +37,6 @@ struct ContentView: View {
                                 Spacer()
                             }
                             .padding(.leading)
-                            .background(.red)
                             .id(number.id)
                         }
                     }
@@ -51,12 +52,12 @@ struct ContentView: View {
                             } else if verticalTranslation < 0 {
                                 // Detecting upward swipe
                                 //print("Swiping Up")
-                                // swipe is calculated here now 
+                                // swipe is calculated here now
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                     if isBeyondZero {fieldIsFocused = true
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                             if let lastId = items.last?.id {
-                                                withAnimation(.snappy){
+                                                withAnimation(.bouncy){
                                                     proxy.scrollTo(lastId, anchor: .bottom)
                                                 }
                                             }
@@ -110,9 +111,9 @@ struct ContentView: View {
 //                                //parseContacts()
 //                            }
 //                        }
+                        .padding(.bottom)
                         .submitLabel(.send)
                         .onSubmit {
-                            fieldIsFocused = true
                             let newItem = StringItem(value: text)
                             items.append(newItem)
                             text = ""
