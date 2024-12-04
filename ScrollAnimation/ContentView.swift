@@ -24,8 +24,6 @@ struct ContentView: View {
         _items = State(initialValue: Array(1...50).map { _ in StringItem(value: ContentView.randomString()) })
     }
     
-    // working implementing this: https://www.reddit.com/r/SwiftUI/comments/xxvvo3/how_to_prevent_the_keyboard_hiding_after_i_click/
-    
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -42,14 +40,14 @@ struct ContentView: View {
                     }
                 }
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 10) // Lower minimumDistance for quicker response
+                    DragGesture(minimumDistance: 5) // Lower minimumDistance for quicker response
                         .onChanged { value in
                             let verticalTranslation = value.translation.height
                             if verticalTranslation > 0 {
                                 // Detecting downward swipe
                                 //print("Swiping Down")
                                 fieldIsFocused = false // Add your logic for swiping down here
-                            } else if verticalTranslation < 0 {
+                            } else if verticalTranslation < 0 && fieldIsFocused == false {
                                 // Detecting upward swipe
                                 //print("Swiping Up")
                                 // swipe is calculated here now
@@ -57,14 +55,13 @@ struct ContentView: View {
                                     if isBeyondZero {fieldIsFocused = true
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                             if let lastId = items.last?.id {
-                                                withAnimation(.bouncy){
+                                                withAnimation(.easeIn){
                                                     proxy.scrollTo(lastId, anchor: .bottom)
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                // Add your logic for swiping up here
                             }
                         }
                         .onEnded { _ in
@@ -73,7 +70,7 @@ struct ContentView: View {
                 )
                 .scrollPosition($position)
                 .onScrollGeometryChange(for: Bool.self) { geometry in
-                    return geometry.contentSize.height < geometry.visibleRect.maxY - geometry.contentInsets.bottom - 45
+                    return geometry.contentSize.height < geometry.visibleRect.maxY - geometry.contentInsets.bottom - 55
                 } action: { wasBeyondZero, isBeyondZero in
                     self.isBeyondZero = isBeyondZero
                     print(isBeyondZero)
@@ -96,7 +93,7 @@ struct ContentView: View {
             
             .safeAreaInset(edge: .bottom) {
                 VStack{
-                    TextField("", text: $text)
+                    TextField("", text: $text, axis: .vertical)
                         .focused($fieldIsFocused)
                         .padding(.horizontal,16)
                         .padding(.vertical,8)
@@ -112,26 +109,27 @@ struct ContentView: View {
 //                            }
 //                        }
                         .padding(.bottom)
-                        .submitLabel(.send)
-                        .onSubmit {
-                            let newItem = StringItem(value: text)
-                            items.append(newItem)
-                            text = ""
-                            withAnimation(.snappy){
-                                //position.scrollTo(id: items.last?.id, anchor: .bottom)
-                            }
-                        }
-//                        .onChange(of: text) { newValue in
-//                            guard let newValueLastChar = newValue.last else { return }
-//                            if newValueLastChar == "\n" {
-//                                let newItem = StringItem(value: text)
-//                                items.append(newItem)
-//                                text = ""
-//                                withAnimation(.snappy){
-//                                    position.scrollTo(id: items.last?.id, anchor: .bottom)
-//                                }
+                        .padding(.horizontal)
+                        //.submitLabel(.send)
+//                        .onSubmit {
+//                            let newItem = StringItem(value: text)
+//                            items.append(newItem)
+//                            text = ""
+//                            withAnimation(.snappy){
+//                                //position.scrollTo(id: items.last?.id, anchor: .bottom)
 //                            }
 //                        }
+                        .onChange(of: text) { newValue in
+                            guard newValue.contains("\n") else { return }
+                                text = newValue.replacing("\n", with: "")
+                                let newItem = StringItem(value: text)
+                                items.append(newItem)
+                                text = ""
+                                withAnimation(.snappy){
+                                    position.scrollTo(id: items.last?.id, anchor: .bottom)
+                                }
+                            
+                        }
                         
                     
                 }
