@@ -13,7 +13,7 @@ import SwiftUI
     }
 
 struct ContentView: View {
-    @State private var text = "Hello"
+    @State private var text = ""
     @State private var position = ScrollPosition()
     @State private var isBeyondZero: Bool = false
     @FocusState private var fieldIsFocused: Bool
@@ -31,7 +31,7 @@ struct ContentView: View {
                     LazyVStack(spacing: 0) {
                         ForEach(items) { number in
                             HStack {
-                                Text("\(number.value)") // Access the `value` property
+                                Text("\(number.value)")
                                 Spacer()
                             }
                             .padding(.leading)
@@ -39,18 +39,16 @@ struct ContentView: View {
                         }
                     }
                 }
+                .contentMargins(.vertical, 16)
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 5) // Lower minimumDistance for quicker response
+                    DragGesture(minimumDistance: 5)
                         .onChanged { value in
                             let verticalTranslation = value.translation.height
                             if verticalTranslation > 0 {
                                 // Detecting downward swipe
-                                //print("Swiping Down")
-                                fieldIsFocused = false // Add your logic for swiping down here
+                                fieldIsFocused = false
                             } else if verticalTranslation < 0 && fieldIsFocused == false {
                                 // Detecting upward swipe
-                                //print("Swiping Up")
-                                // swipe is calculated here now
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                     if isBeyondZero {fieldIsFocused = true
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -64,9 +62,6 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onEnded { _ in
-                            // Optionally handle the end of the gesture if needed
-                        }
                 )
                 .scrollPosition($position)
                 .onScrollGeometryChange(for: Bool.self) { geometry in
@@ -74,21 +69,8 @@ struct ContentView: View {
                 } action: { wasBeyondZero, isBeyondZero in
                     self.isBeyondZero = isBeyondZero
                     print(isBeyondZero)
-                    //swipe was calculated here before
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-//                        print(isBeyondZero)
-//                        fieldIsFocused = true
-//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-//                            if let lastId = items.last?.id {
-//                                withAnimation(.snappy){
-//                                    proxy.scrollTo(lastId, anchor: .bottom)
-//                                }
-//                            }
-//                        }
-//                    }
                 }
-                
-                .navigationTitle(text.isEmpty ? "Test" : text)
+                .navigationTitle("Keyboard on Drag")
             }
             
             .safeAreaInset(edge: .bottom) {
@@ -99,7 +81,17 @@ struct ContentView: View {
                         .padding(.vertical,8)
                         .background(Color(uiColor: .secondarySystemGroupedBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 10))
-//                        .onChange(of: text){ oldValue, newValue in
+                        .padding(.bottom)
+                        .padding(.horizontal)
+                        .onChange(of: text) { newValue in
+                            guard newValue.contains("\n") else { return }
+                            text = newValue.replacing("\n", with: "")
+                            let newItem = StringItem(value: text)
+                            items.append(newItem)
+                            text = ""
+                            withAnimation(.snappy){
+                                position.scrollTo(id: items.last?.id, anchor: .bottom)
+                            }
 //                            if let last = newValue.last, last == "\n" {
 //                                text.removeLast()
 //                                // do your submit logic here?
@@ -107,33 +99,13 @@ struct ContentView: View {
 //                            } else {
 //                                //parseContacts()
 //                            }
-//                        }
-                        .padding(.bottom)
-                        .padding(.horizontal)
-                        //.submitLabel(.send)
-//                        .onSubmit {
-//                            let newItem = StringItem(value: text)
-//                            items.append(newItem)
-//                            text = ""
-//                            withAnimation(.snappy){
-//                                //position.scrollTo(id: items.last?.id, anchor: .bottom)
-//                            }
-//                        }
-                        .onChange(of: text) { newValue in
-                            guard newValue.contains("\n") else { return }
-                                text = newValue.replacing("\n", with: "")
-                                let newItem = StringItem(value: text)
-                                items.append(newItem)
-                                text = ""
-                                withAnimation(.snappy){
-                                    position.scrollTo(id: items.last?.id, anchor: .bottom)
-                                }
                             
                         }
-                        
+                    
                     
                 }
             }
+            .background(Color(uiColor: .systemGroupedBackground))
         }
         
     }
